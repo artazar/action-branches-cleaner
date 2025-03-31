@@ -1,0 +1,12 @@
+services:
+  test:
+    build:
+      context: ../..
+      dockerfile: test/docker/Dockerfile.test
+    volumes:
+      - ../../:/github/workspace
+    environment:
+      - GITHUB_REPOSITORY=test-user/test-repo
+      - GITHUB_TOKEN=fake-token
+      - BRANCHES_CLEANER_HOME=/github/workspace
+    command: /github/workspace/test/docker/run_tests.sh

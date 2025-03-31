@@ -1,0 +1,94 @@
+name: Test Branches Cleaner Action
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Run Bats tests
+        run: |
+          bats test/bats
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Run Docker tests
+        run: |
+          cd test/docker
+          docker-compose up --build --exit-code-from test
+
+  functional-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Create test branches
+        run: |
+          # Configurar git
+          git config --global user.email "test@example.com"
+          git config --global user.name "Test User"
+          
+          # Crear ramas para pruebas
+          git checkout -b feature/active
+          echo "active content" > active.txt
+          git add active.txt
+          git commit -m "Active branch commit"
+          
+          # Crear una rama con fecha antigua
+          git checkout -b feature/inactive
+          echo "inactive content" > inactive.txt
+          git add inactive.txt
+          GIT_COMMITTER_DATE="2020-01-01T12:00:00" git commit --date="2020-01-01T12:00:00" -m "Old commit"
+          
+          # Volver a la rama principal
+          git checkout main
+          
+          # Ver las ramas creadas
+          git branch
+
+      - name: Run Branch Cleaner Action
+        uses: ./
+        with:
+          base_branches: 'main'
+          days_old_threshold: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify results
+        run: |
+          # Comprobar que la rama inactiva se ha eliminado
+          if git show-ref --verify --quiet refs/heads/feature/inactive; then
+            echo "La rama inactiva no se eliminó correctamente"
+            exit 1
+          else
+            echo "La rama inactiva se eliminó correctamente"
+          fi
+          
+          # Comprobar que la rama activa aún existe (no debería ser eliminada)
+          if git show-ref --verify --quiet refs/heads/feature/active; then
+            echo "La rama activa sigue existiendo, como se esperaba"
+          else
+            echo "La rama activa se eliminó incorrectamente"
+            exit 1
+          fi 
