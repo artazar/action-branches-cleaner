@@ -21,6 +21,12 @@ function mock_curl() {
   # Definir API_DIR en caso de que no esté disponible en el entorno
   local API_DIR="${API_DIR:-/tmp/github_api}"
   
+  # Si MOCK_ERROR está definido y es 1, simular un error
+  if [[ -n "${MOCK_ERROR:-}" && "${MOCK_ERROR:-}" -eq 1 ]]; then
+    echo "MOCK API ERROR: Simulando error de API" >&2
+    return 1
+  fi
+  
   # Extraer el comando (GET, DELETE, etc.) y la URL
   local command=$(echo "$url" | grep -o -E '(GET|DELETE|POST|PUT)' || echo "GET")
   local endpoint=$(echo "$url" | grep -o -E 'https://api.github.com/repos/[^ ]+' | sed 's|https://api.github.com/||')
