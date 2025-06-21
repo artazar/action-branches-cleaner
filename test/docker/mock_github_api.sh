@@ -28,8 +28,10 @@ function mock_curl() {
   fi
   
   # Extraer el comando (GET, DELETE, etc.) y la URL
-  local command=$(echo "$url" | grep -o -E '(GET|DELETE|POST|PUT)' || echo "GET")
-  local endpoint=$(echo "$url" | grep -o -E 'https://api.github.com/repos/[^ ]+' | sed 's|https://api.github.com/||')
+  local command
+  local endpoint
+  command=$(echo "$url" | grep -o -E '(GET|DELETE|POST|PUT)' || echo "GET")
+  endpoint=$(echo "$url" | grep -o -E 'https://api.github.com/repos/[^ ]+' | sed 's|https://api.github.com/||')
   
   echo "MOCK API REQUEST: $command $endpoint" >&2
   
@@ -49,7 +51,8 @@ function mock_curl() {
       ;;
     *"git/refs/heads/"*)
       if [[ "$command" == "DELETE" ]]; then
-        local branch=$(echo "$endpoint" | sed 's|.*/heads/||')
+        local branch
+        branch=$(echo "$endpoint" | sed 's|.*/heads/||')
         echo "MOCK API: Deleted branch $branch" >&2
         echo '{}'
       else

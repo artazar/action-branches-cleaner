@@ -76,8 +76,8 @@ github::get_inactive_branches() {
   else
     # Default logic for non-test cases
     local threshold_date
-    threshold_date=$(date --date="$days_threshold day ago" +"%Y-%m-%dT%H:%M:%SZ")
     local threshold_timestamp
+    threshold_date=$(date --date="$days_threshold day ago" +"%Y-%m-%dT%H:%M:%SZ")
     threshold_timestamp=$(date -d "$threshold_date" +%s)
     
     local branches

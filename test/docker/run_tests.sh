@@ -10,6 +10,7 @@ TESTS_TOTAL=0
 
 # Cargar el mock de la API de GitHub
 echo "Cargando mock de la API de GitHub..."
+# shellcheck disable=SC1091
 source "/github/workspace/test/docker/mock_github_api.sh"
 
 # Función para ejecutar un test y verificar su salida
@@ -26,6 +27,8 @@ run_test() {
   TESTS_TOTAL=$((TESTS_TOTAL + 1))
   
   # Ejecutar el comando y capturar su salida
+  local output
+  local exit_code
   output=$(eval "$cmd")
   exit_code=$?
   

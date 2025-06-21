@@ -12,7 +12,11 @@ if [ -z "${BRANCHES_CLEANER_HOME:-}" ]; then
   BRANCHES_CLEANER_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
 fi
 
+# shellcheck source=src/github.sh
+# shellcheck disable=SC1091
 source "$BRANCHES_CLEANER_HOME"/src/github.sh
+# shellcheck source=src/cleanup.sh  
+# shellcheck disable=SC1091
 source "$BRANCHES_CLEANER_HOME"/src/cleanup.sh
 
 main() {

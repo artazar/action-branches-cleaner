@@ -49,6 +49,7 @@ date() {
 }
 
 # Load the source file
+# shellcheck disable=SC1091
 source "$REPO_ROOT/src/github.sh"
 
 export GITHUB_TOKEN="fake-token"
