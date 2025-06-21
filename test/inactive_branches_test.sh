@@ -5,6 +5,7 @@ set -e
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Mock functions to avoid real API calls
+# shellcheck disable=SC2317
 github::get_branches() {
   echo "feature/old"
   echo "feature/new"

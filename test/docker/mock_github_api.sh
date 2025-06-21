@@ -16,7 +16,7 @@ echo '{"commit": {"commit": {"committer": {"date": "2023-01-10T00:00:00Z"}}}}' >
 
 # Función para simular curl con archivos locales
 function mock_curl() {
-  local url="$@"
+  local url="$*"
   
   # Definir API_DIR en caso de que no esté disponible en el entorno
   local API_DIR="${API_DIR:-/tmp/github_api}"
@@ -31,7 +31,8 @@ function mock_curl() {
   local command
   local endpoint
   command=$(echo "$url" | grep -o -E '(GET|DELETE|POST|PUT)' || echo "GET")
-  endpoint=$(echo "$url" | grep -o -E 'https://api.github.com/repos/[^ ]+' | sed 's|https://api.github.com/||')
+  endpoint=$(echo "$url" | grep -o -E 'https://api.github.com/repos/[^ ]+')
+  endpoint=${endpoint#https://api.github.com/}
   
   echo "MOCK API REQUEST: $command $endpoint" >&2
   
@@ -52,7 +53,7 @@ function mock_curl() {
     *"git/refs/heads/"*)
       if [[ "$command" == "DELETE" ]]; then
         local branch
-        branch=$(echo "$endpoint" | sed 's|.*/heads/||')
+        branch=${endpoint##*/heads/}
         echo "MOCK API: Deleted branch $branch" >&2
         echo '{}'
       else
