@@ -17,9 +17,9 @@ jobs:
 
       - name: Run shellcheck
         run: |
-          shellcheck src/*.sh
-          shellcheck entrypoint.sh
-          shellcheck test/*.sh test/docker/*.sh
+          shellcheck -x src/*.sh
+          shellcheck -x entrypoint.sh
+          shellcheck -x test/*.sh test/docker/*.sh
 
   unit-tests:
     runs-on: ubuntu-latest
