@@ -10,6 +10,7 @@ fi
 
 export BRANCHES_CLEANER_HOME
 
+# shellcheck source=src/main.sh
 source "$BRANCHES_CLEANER_HOME/src/main.sh"
 
 for a in "${@}"; do
