@@ -4,7 +4,35 @@
     <img src="assets/branche_cleaner.svg" alt="github action icon" width="250px" height="250px">
 </p>
 
-This GitHub Action automatically cleans up branches in a repository, deleting closed branches without merges, merged branches, and inactive branches after a specified period in days. You can specify the base branches or protected branches that should not be deleted.
+## Why Clean Up Your Branches?
+
+Keeping your repository clean is crucial for team productivity and project maintainability:
+
+- **🔍 Difficult Navigation**: Too many branches make it hard to find active work
+- **😵 Confusing Pull Requests**: Obsolete branches create noise in PR lists
+- **⏱️ Slow Performance**: Repositories with hundreds of stale branches can become sluggish
+- **🤔 Team Confusion**: Developers may accidentally work on outdated branches
+- **📊 Poor Repository Health**: Cluttered branch lists reflect poorly on project organization
+
+## What This Action Does
+
+This GitHub Action automatically cleans up branches in your repository by removing:
+
+✅ **Closed PR branches without merges** - Feature branches that were rejected or abandoned  
+✅ **Already merged branches** - Branches that have been successfully integrated  
+✅ **Inactive branches** - Branches with no commits for a specified period (configurable)  
+✅ **Smart protection** - Never touches your important base branches (main, develop, etc.)
+
+## Key Benefits
+
+- 🧹 **Cleaner repository** that's easier to navigate
+- ⚡ **Better performance** and faster operations
+- 👥 **Less confusion** for your development team
+- 🔄 **Full automation** - runs on schedule without manual intervention
+- 🛡️ **Safe operation** - protects your important branches
+- 📈 **Better project health** - maintains a professional, organized repository
+
+You can specify the base branches or protected branches that should not be deleted, and configure how many days of inactivity before a branch is considered stale.
 
 <a href="https://www.buymeacoffee.com/mmoreno" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height: auto !important;width: 100px !important;" ></a>
 
