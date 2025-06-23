@@ -31,7 +31,7 @@ setup() {
     esac
   }
   
-  # Mock de date para tener fechas consistentes
+  # Mock date to have consistent dates
   date() {
     if [[ "$*" == *"--date=\"7 day ago\""* || "$*" == *"--date=7 day ago"* ]]; then
       echo "2023-01-05T00:00:00Z"
@@ -72,7 +72,7 @@ setup() {
   [ "$result" = "$expected" ]
 }
 
-@test "github::delete_branch no borra ramas base" {
+@test "github::delete_branch does not delete base branches" {
   run github::delete_branch "main"
   echo "Output: $output"
   
@@ -80,7 +80,7 @@ setup() {
   [[ "$output" != *"DELETE"* ]]
 }
 
-@test "github::delete_branch borra ramas que no son base" {
+@test "github::delete_branch deletes non-base branches" {
   run github::delete_branch "feature/test1"
   echo "Output: $output"
   
@@ -88,29 +88,29 @@ setup() {
   [[ "$output" == *"DELETE"* ]]
 }
 
-@test "github::get_branches lista todas las ramas disponibles" {
+@test "github::get_branches lists all available branches" {
   result=$(github::get_branches)
   expected=$'feature/test1\nfeature/test2\nmain'
   
-  echo "Resultado: '$result'"
-  echo "Esperado: '$expected'"
+  echo "Result: '$result'"
+  echo "Expected: '$expected'"
   
   [ "$result" = "$expected" ]
 }
 
-@test "github::get_inactive_branches encuentra ramas inactivas" {
-  # Sobrescribir el mock para este test específico
+@test "github::get_inactive_branches finds inactive branches" {
+  # Override the mock for this specific test
   github::get_branches() {
     echo "feature/test1"
     echo "feature/test2"
     echo "main"
   }
   
-  # Usar el umbral de días adecuado
+  # Use the appropriate day threshold
   result=$(github::get_inactive_branches "7")
   
-  echo "Resultado: '$result'"
+  echo "Result: '$result'"
   
-  # Cambia la expectativa para que coincida con lo que devuelve el mock
+  # Change the expectation to match what the mock returns
   [ "$result" = "feature/old" ]
 } 

@@ -2,9 +2,9 @@
 
 load '../test_helper.bash'
 
-# Configuración para todas las pruebas
+# Setup for all tests
 setup() {
-  # Configurar mocks para evitar llamadas reales
+  # Configure mocks to avoid real calls
   curl() {
     case "$*" in
       *"pulls?state=closed"*)
@@ -28,7 +28,7 @@ setup() {
     esac
   }
   
-  # Mock de date para tener fechas consistentes
+  # Mock date to have consistent dates
   date() {
     if [[ "$*" == *"--date=\"7 day ago\""* || "$*" == *"--date=7 day ago"* ]]; then
       echo "2023-01-05T00:00:00Z"
@@ -43,75 +43,75 @@ setup() {
     fi
   }
   
-  # Cargar todos los scripts necesarios
+  # Load all necessary scripts
   source "${BATS_TEST_DIRNAME}/../../src/github.sh"
   source "${BATS_TEST_DIRNAME}/../../src/cleanup.sh"
   source "${BATS_TEST_DIRNAME}/../../src/main.sh"
   
-  # Variables de entorno necesarias
+  # Required environment variables
   export GITHUB_TOKEN="fake-token"
   export GITHUB_REPOSITORY="test-user/test-repo"
 }
 
-@test "Flujo completo de limpieza de ramas" {
-  # Ejecutar la función main con los parámetros de prueba
+@test "Complete branch cleanup flow" {
+  # Execute the main function with test parameters
   run main "main,develop" "7" "fake-token"
   
-  # Verificaciones
+  # Verifications
   [ "$status" -eq 0 ]
   
-  # Comprobar que se detectaron y eliminaron las ramas fusionadas
+  # Check that merged branches were detected and deleted
   [[ "$output" == *"Deleting merged branch: feature/test2"* ]]
   
-  # Comprobar que se detectaron y eliminaron las ramas no fusionadas
+  # Check that non-merged branches were detected and deleted
   [[ "$output" == *"Deleting not merged branch: feature/test1"* ]]
   
-  # Comprobar que se detectaron y eliminaron las ramas inactivas (feature/old es la inactiva)
+  # Check that inactive branches were detected and deleted (feature/old is the inactive one)
   [[ "$output" == *"Deleting inactive branch: feature/old"* ]]
   
-  # Comprobar que no se tocaron las ramas base
+  # Check that base branches were not touched
   [[ "$output" != *"Deleting"*"main"* ]]
 }
 
-@test "Flujo con ramas base protegidas" {
-  # Primero, mostrar las ramas base actuales para depuración
-  echo "BASE_BRANCHES antes: ${BASE_BRANCHES[*]}"
+@test "Flow with protected base branches" {
+  # First, show current base branches for debugging
+  echo "BASE_BRANCHES before: ${BASE_BRANCHES[*]}"
   
-  # Configurar las ramas base explícitamente
+  # Configure base branches explicitly
   BASE_BRANCHES=("main" "develop" "feature/test2")
   export BASE_BRANCHES
   
-  # Verificar que se configuraron correctamente
-  echo "BASE_BRANCHES después: ${BASE_BRANCHES[*]}"
+  # Verify they were configured correctly
+  echo "BASE_BRANCHES after: ${BASE_BRANCHES[*]}"
   
-  # Ejecutar la función principal
-  # Nota: Aunque pasamos "main,develop,feature/test2", asegurémonos de que BASE_BRANCHES esté correctamente configurado
+  # Execute the main function
+  # Note: Although we pass "main,develop,feature/test2", let's ensure BASE_BRANCHES is correctly configured
   run main "main,develop,feature/test2" "7" "fake-token"
   
-  # Mostrar toda la salida para depuración
-  echo "Salida: $output"
+  # Show all output for debugging
+  echo "Output: $output"
   
-  # Verificaciones
+  # Verifications
   [ "$status" -eq 0 ]
   
-  # Comprobar que feature/test2 NO se eliminó (modificamos esta expectativa)
+  # Check that feature/test2 was NOT deleted (we modified this expectation)
   [[ ! "$output" == *"Deleting merged branch: feature/test2"* ]]
   
-  # Comprobar que feature/test1 SÍ se eliminó
+  # Check that feature/test1 WAS deleted
   [[ "$output" == *"Deleting not merged branch: feature/test1"* ]]
 }
 
-@test "Umbral de días personalizado" {
-  # Usar un umbral de 30 días
+@test "Custom day threshold" {
+  # Use a 30-day threshold
   run main "main" "30" "fake-token"
   
-  # Verificaciones
+  # Verifications
   [ "$status" -eq 0 ]
   
-  # Las ramas fusionadas y no fusionadas todavía se procesan
+  # Merged and non-merged branches are still processed
   [[ "$output" == *"Deleting merged branch: feature/test2"* ]]
   [[ "$output" == *"Deleting not merged branch: feature/test1"* ]]
   
-  # Con umbral de 30 días, solo feature/old debería ser inactiva
+  # With a 30-day threshold, only feature/old should be inactive
   [[ "$output" == *"Deleting inactive branch: feature/old"* ]]
 } 
