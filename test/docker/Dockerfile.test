@@ -1,0 +1,36 @@
+FROM ubuntu:latest
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+  curl \
+  jq \
+  git \
+  bats \
+  netcat-openbsd \
+  nodejs \
+  npm \
+  && rm -rf /var/lib/apt/lists/*
+
+# Configure environment
+WORKDIR /github/workspace
+ENV GITHUB_WORKSPACE=/github/workspace
+ENV GITHUB_ACTION_PATH=/github/workspace
+ENV GITHUB_REPOSITORY=test-user/test-repo
+ENV GITHUB_TOKEN=fake-token
+ENV BRANCHES_CLEANER_HOME=/github/workspace
+
+# Copy source code
+COPY src/ /github/workspace/src/
+COPY entrypoint.sh /github/workspace/
+COPY action.yml /github/workspace/
+
+# Copy test scripts
+COPY test/ /github/workspace/test/
+
+# Set execution permissions
+RUN chmod +x /github/workspace/entrypoint.sh \
+  && chmod +x /github/workspace/src/*.sh \
+  && chmod +x /github/workspace/test/docker/*.sh
+
+# Run tests
+CMD ["/github/workspace/test/docker/run_tests.sh"] 

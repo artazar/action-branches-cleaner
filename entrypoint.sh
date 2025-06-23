@@ -10,10 +10,13 @@ fi
 
 export BRANCHES_CLEANER_HOME
 
+# shellcheck source=src/main.sh
+# shellcheck disable=SC1091
 source "$BRANCHES_CLEANER_HOME/src/main.sh"
 
+sanitizedArgs=()
 for a in "${@}"; do
-  arg=$(echo "$a" | tr '\n' ' ' | xargs echo | sed "s/'//g"| sed "s/’//g")
+  arg=$(echo "$a" | tr '\n' ' ' | xargs echo | sed "s/'//g"| sed "s/'//g")
   sanitizedArgs+=("$arg")
 done
 

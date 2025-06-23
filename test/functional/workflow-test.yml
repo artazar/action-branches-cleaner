@@ -1,0 +1,94 @@
+name: Test Branches Cleaner Action
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Run Bats tests
+        run: |
+          bats test/bats
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Run Docker tests
+        run: |
+          cd test/docker
+          docker-compose up --build --exit-code-from test
+
+  functional-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Create test branches
+        run: |
+          # Configure git
+          git config --global user.email "test@example.com"
+          git config --global user.name "Test User"
+          
+          # Create branches for tests
+          git checkout -b feature/active
+          echo "active content" > active.txt
+          git add active.txt
+          git commit -m "Active branch commit"
+          
+          # Create an old branch
+          git checkout -b feature/inactive
+          echo "inactive content" > inactive.txt
+          git add inactive.txt
+          GIT_COMMITTER_DATE="2020-01-01T12:00:00" git commit --date="2020-01-01T12:00:00" -m "Old commit"
+          
+          # Go back to main branch
+          git checkout main
+          
+          # List created branches
+          git branch
+
+      - name: Run Branch Cleaner Action
+        uses: ./
+        with:
+          base_branches: 'main'
+          days_old_threshold: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify results
+        run: |
+          # Check that the inactive branch has been removed correctly
+          if git show-ref --verify --quiet refs/heads/feature/inactive; then
+            echo "Inactive branch was not removed correctly"
+            exit 1
+          else
+            echo "Inactive branch removed successfully"
+          fi
+          
+          # Check that the active branch still exists (should not be deleted correctly)
+          if git show-ref --verify --quiet refs/heads/feature/active; then
+            echo "Active branch still exists as expected"
+          else
+            echo "Active branch was removed incorrectly"
+            exit 1
+          fi 
