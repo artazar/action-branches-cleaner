@@ -2,13 +2,13 @@
 
 github::get_closed_prs() {
   curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_API_URL/pulls?state=closed" |
+    "$GITHUB_API_URL/pulls?state=closed&per_page=100" |
     jq -r '.[] | .head.ref'
 }
 
 github::get_merged_prs() {
   curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_API_URL/pulls?state=closed" |
+    "$GITHUB_API_URL/pulls?state=closed&per_page=100" |
     jq -r '.[] | select(.merged_at != null) | .head.ref'
 }
 
@@ -30,7 +30,7 @@ github::delete_branch() {
 
 github::get_branches() {
   curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_API_URL/branches?protected=false" |
+    "$GITHUB_API_URL/branches?protected=false&per_page=100" |
     jq -r '.[] | .name'
 }
 
