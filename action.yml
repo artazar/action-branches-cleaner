@@ -17,6 +17,10 @@ inputs:
     description: 'Delete branches from closed but unmerged PRs (rejected/abandoned)'
     required: false
     default: 'false'
+  dry_run:
+    description: 'Run in dry-run mode (only log what would be deleted, do not actually delete)'
+    required: false
+    default: 'false'
   token:
     description: 'GitHub token for authentication'
     required: true
@@ -29,4 +33,4 @@ runs:
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
       run: |
-        ${GITHUB_ACTION_PATH}/entrypoint.sh "${{ inputs.base_branches }}" "${{ inputs.days_old_threshold }}" "${{ inputs.delete_unmerged_prs }}" "${{ inputs.token }}"
+        ${GITHUB_ACTION_PATH}/entrypoint.sh "${{ inputs.base_branches }}" "${{ inputs.days_old_threshold }}" "${{ inputs.delete_unmerged_prs }}" "${{ inputs.dry_run }}" "${{ inputs.token }}"

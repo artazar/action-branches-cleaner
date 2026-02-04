@@ -23,16 +23,24 @@ main() {
   BASE_BRANCHES_STR=$1
   DAYS_OLD_THRESHOLD=$2
   DELETE_UNMERGED_PRS=${3:-true}
-  GITHUB_TOKEN=$4
+  DRY_RUN=${4:-false}
+  GITHUB_TOKEN=$5
 
   GITHUB_API_URL="https://api.github.com/repos/$GITHUB_REPOSITORY"
 
   export GITHUB_TOKEN
   export GITHUB_API_URL
+  export DRY_RUN
 
   IFS=',' read -ra BASE_BRANCHES <<<"$BASE_BRANCHES_STR"
 
   export BASE_BRANCHES
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    echo "=========================================="
+    echo "DRY RUN MODE - No branches will be deleted"
+    echo "=========================================="
+  fi
 
   closed_prs=$(github::get_closed_prs)
 

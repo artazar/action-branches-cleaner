@@ -1,20 +1,92 @@
 #!/bin/env bash
 
 github::get_closed_prs() {
-  curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_API_URL/pulls?state=closed&per_page=100" |
-    jq -r '.[] | .head.ref'
+  local page=1
+  local all_branches=""
+
+  while true; do
+    local response
+    response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+      "$GITHUB_API_URL/pulls?state=closed&per_page=100&page=$page")
+
+    # Check if response is a valid JSON array
+    if ! echo "$response" | jq -e 'if type == "array" then true else false end' > /dev/null 2>&1; then
+      echo "ERROR: Failed to fetch closed PRs on page $page" >&2
+      break
+    fi
+
+    local branches
+    branches=$(echo "$response" | jq -r '.[] | .head.ref')
+
+    # Break if no more results
+    if [[ -z "$branches" ]]; then
+      break
+    fi
+
+    if [[ -z "$all_branches" ]]; then
+      all_branches="$branches"
+    else
+      all_branches="${all_branches}"$'\n'"${branches}"
+    fi
+
+    # Check if we got less than 100 results (last page)
+    local count
+    count=$(echo "$response" | jq '. | length')
+    if [[ "$count" -lt 100 ]]; then
+      break
+    fi
+
+    ((page++))
+  done
+
+  echo "$all_branches"
 }
 
 github::get_merged_prs() {
-  curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_API_URL/pulls?state=closed&per_page=100" |
-    jq -r '.[] | select(.merged_at != null) | .head.ref'
+  local page=1
+  local all_branches=""
+
+  while true; do
+    local response
+    response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+      "$GITHUB_API_URL/pulls?state=closed&per_page=100&page=$page")
+
+    # Check if response is a valid JSON array
+    if ! echo "$response" | jq -e 'if type == "array" then true else false end' > /dev/null 2>&1; then
+      echo "ERROR: Failed to fetch merged PRs on page $page" >&2
+      break
+    fi
+
+    local branches
+    branches=$(echo "$response" | jq -r '.[] | select(.merged_at != null) | .head.ref')
+
+    # Break if no more results
+    if [[ -z "$branches" ]]; then
+      break
+    fi
+
+    if [[ -z "$all_branches" ]]; then
+      all_branches="$branches"
+    else
+      all_branches="${all_branches}"$'\n'"${branches}"
+    fi
+
+    # Check if we got less than 100 results (last page)
+    local count
+    count=$(echo "$response" | jq '. | length')
+    if [[ "$count" -lt 100 ]]; then
+      break
+    fi
+
+    ((page++))
+  done
+
+  echo "$all_branches"
 }
 
 github::delete_branch() {
   local branch="$1"
-  
+
   # Check if the branch is part of the base branches list
   for base_branch in "${BASE_BRANCHES[@]}"; do
     if [[ "$branch" == "$base_branch" ]]; then
@@ -22,16 +94,79 @@ github::delete_branch() {
       return 0
     fi
   done
-  
+
+  # Dry run mode - only log intent
+  if [[ "$DRY_RUN" == "true" ]]; then
+    echo "[DRY RUN] Would delete branch: $branch"
+    return 0
+  fi
+
   # Proceed with deletion if it is not a base branch
-  curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_API_URL/git/refs/heads/$branch"
+  local response
+  local http_code
+
+  response=$(curl -s -w "\n%{http_code}" -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+    "$GITHUB_API_URL/git/refs/heads/$branch")
+
+  http_code=$(echo "$response" | tail -n1)
+  local body=$(echo "$response" | sed '$d')
+
+  case "$http_code" in
+    204)
+      echo "Successfully deleted branch: $branch"
+      ;;
+    404|422)
+      echo "Branch already deleted or does not exist: $branch"
+      ;;
+    *)
+      echo "Failed to delete branch: $branch (HTTP $http_code)"
+      if [[ -n "$body" ]]; then
+        echo "$body"
+      fi
+      ;;
+  esac
 }
 
 github::get_branches() {
-  curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_API_URL/branches?protected=false&per_page=100" |
-    jq -r '.[] | .name'
+  local page=1
+  local all_branches=""
+
+  while true; do
+    local response
+    response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+      "$GITHUB_API_URL/branches?protected=false&per_page=100&page=$page")
+
+    # Check if response is a valid JSON array
+    if ! echo "$response" | jq -e 'if type == "array" then true else false end' > /dev/null 2>&1; then
+      echo "ERROR: Failed to fetch branches on page $page" >&2
+      break
+    fi
+
+    local branches
+    branches=$(echo "$response" | jq -r '.[] | .name')
+
+    # Break if no more results
+    if [[ -z "$branches" ]]; then
+      break
+    fi
+
+    if [[ -z "$all_branches" ]]; then
+      all_branches="$branches"
+    else
+      all_branches="${all_branches}"$'\n'"${branches}"
+    fi
+
+    # Check if we got less than 100 results (last page)
+    local count
+    count=$(echo "$response" | jq '. | length')
+    if [[ "$count" -lt 100 ]]; then
+      break
+    fi
+
+    ((page++))
+  done
+
+  echo "$all_branches"
 }
 
 # Get inactive branches that haven't had commits for the specified number of days
