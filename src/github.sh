@@ -3,11 +3,12 @@
 github::get_closed_prs() {
   local page=1
   local all_branches=""
+  local should_continue=true
 
-  while true; do
+  while $should_continue; do
     local response
     response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-      "$GITHUB_API_URL/pulls?state=closed&per_page=100&page=$page")
+      "$GITHUB_API_URL/pulls?state=closed&per_page=100&page=$page&sort=updated&direction=desc")
 
     # Check if response is a valid JSON array
     if ! echo "$response" | jq -e 'if type == "array" then true else false end' > /dev/null 2>&1; then
@@ -16,7 +17,20 @@ github::get_closed_prs() {
     fi
 
     local branches
-    branches=$(echo "$response" | jq -r '.[] | .head.ref')
+    if [[ -n "$LAST_RUN_TIMESTAMP" ]]; then
+      # Filter PRs closed after last run timestamp
+      branches=$(echo "$response" | jq -r --arg last_run "$LAST_RUN_TIMESTAMP" \
+        '.[] | select(.closed_at > $last_run) | .head.ref')
+
+      # Check if we've reached PRs older than last run
+      local oldest_on_page
+      oldest_on_page=$(echo "$response" | jq -r '.[-1].closed_at // empty')
+      if [[ -n "$oldest_on_page" && "$oldest_on_page" < "$LAST_RUN_TIMESTAMP" ]]; then
+        should_continue=false
+      fi
+    else
+      branches=$(echo "$response" | jq -r '.[] | .head.ref')
+    fi
 
     # Break if no more results
     if [[ -z "$branches" ]]; then
@@ -45,11 +59,12 @@ github::get_closed_prs() {
 github::get_merged_prs() {
   local page=1
   local all_branches=""
+  local should_continue=true
 
-  while true; do
+  while $should_continue; do
     local response
     response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-      "$GITHUB_API_URL/pulls?state=closed&per_page=100&page=$page")
+      "$GITHUB_API_URL/pulls?state=closed&per_page=100&page=$page&sort=updated&direction=desc")
 
     # Check if response is a valid JSON array
     if ! echo "$response" | jq -e 'if type == "array" then true else false end' > /dev/null 2>&1; then
@@ -58,7 +73,20 @@ github::get_merged_prs() {
     fi
 
     local branches
-    branches=$(echo "$response" | jq -r '.[] | select(.merged_at != null) | .head.ref')
+    if [[ -n "$LAST_RUN_TIMESTAMP" ]]; then
+      # Filter merged PRs closed after last run timestamp
+      branches=$(echo "$response" | jq -r --arg last_run "$LAST_RUN_TIMESTAMP" \
+        '.[] | select(.merged_at != null and .closed_at > $last_run) | .head.ref')
+
+      # Check if we've reached PRs older than last run
+      local oldest_on_page
+      oldest_on_page=$(echo "$response" | jq -r '.[-1].closed_at // empty')
+      if [[ -n "$oldest_on_page" && "$oldest_on_page" < "$LAST_RUN_TIMESTAMP" ]]; then
+        should_continue=false
+      fi
+    else
+      branches=$(echo "$response" | jq -r '.[] | select(.merged_at != null) | .head.ref')
+    fi
 
     # Break if no more results
     if [[ -z "$branches" ]]; then

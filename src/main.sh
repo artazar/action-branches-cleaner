@@ -42,6 +42,17 @@ main() {
     echo "=========================================="
   fi
 
+  # Load last run timestamp from state file
+  local last_run_timestamp=""
+  if [[ -f ".branch-cleaner-state" ]]; then
+    last_run_timestamp=$(cat .branch-cleaner-state)
+    echo "Last run timestamp: $last_run_timestamp ($(date -d "$last_run_timestamp" 2>/dev/null || date -r $(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$last_run_timestamp" +%s 2>/dev/null) 2>/dev/null || echo "unknown"))"
+  else
+    echo "No previous run found, processing all PRs"
+  fi
+
+  export LAST_RUN_TIMESTAMP="$last_run_timestamp"
+
   closed_prs=$(github::get_closed_prs)
 
   merged_prs=$(github::get_merged_prs)
@@ -57,4 +68,8 @@ main() {
   fi
 
   cleanup::delete_inactive_branches "$DAYS_OLD_THRESHOLD"
+
+  # Save current timestamp for next run
+  date -u +"%Y-%m-%dT%H:%M:%SZ" > .branch-cleaner-state
+  echo "Saved current timestamp for next run"
 }

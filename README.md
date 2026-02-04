@@ -50,6 +50,14 @@ You can specify the base branches or protected branches that should not be delet
 
 **_Optional_**. Number of days of inactivity to remove inactive branches. Default is `7`.
 
+### `delete_unmerged_prs`
+
+**_Optional_**. Delete branches from closed but unmerged PRs (rejected/abandoned). Default is `false`.
+
+### `dry_run`
+
+**_Optional_**. Run in dry-run mode (only log what would be deleted, do not actually delete). Default is `false`.
+
 ## Usage
 
 This GitHub Action can be triggered by different events offered by GitHub, depending on the needs of each team or individual. In the following example, a schedule trigger is used to run the action every day at midnight:
@@ -78,6 +86,57 @@ jobs:
 Refer to the [official GitHub documentation](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows) for more information on the different events that can be used to
 trigger GitHub Actions.
 
+## Advanced Features
+
+### Incremental Processing
+
+The action uses GitHub Actions cache to store the last run timestamp, ensuring it only processes PRs that have been closed since the last run. This dramatically improves performance for repositories with many PRs.
+
+**How it works:**
+- First run: Processes all closed PRs and saves the current timestamp
+- Subsequent runs: Only processes PRs closed after the last run
+- Cache retention: 7 days (automatically reprocesses all PRs if cache expires)
+
+### Clearing the Cache
+
+If you need to reprocess all PRs from scratch, you can manually clear the cache:
+
+**Method 1: Using GitHub CLI**
+```bash
+# List all caches for your repository
+gh cache list
+
+# Delete the branch cleaner cache
+gh cache delete "branch-cleaner-<owner>/<repo>-"
+
+# Or delete all matching caches
+gh cache list --json key | jq -r '.[].key' | grep "branch-cleaner" | xargs -I {} gh cache delete {}
+```
+
+**Method 2: Using GitHub UI**
+1. Go to your repository on GitHub
+2. Navigate to **Actions** → **Caches** (in the left sidebar)
+3. Find caches starting with `branch-cleaner-`
+4. Click the trash icon (🗑️) to delete
+
+After clearing the cache, the next run will process all PRs from scratch and create a new cache.
+
+### Dry Run Mode
+
+Test the action without actually deleting branches:
+
+```yaml
+- name: GitHub Branch Cleaner (Dry Run)
+  uses: mmorenoregalado/action-branches-cleaner@v2.0.1
+  with:
+    base_branches: main
+    token: ${{ secrets.GITHUB_TOKEN }}
+    days_old_threshold: 180
+    dry_run: true
+```
+
+This will log all branches that would be deleted without making any actual deletions.
+
 ## Troubleshooting
 
 If you encounter an error with exit code 127 when running this action, it may be due to restrictions on workflow runs in your repository settings. To resolve this issue, please check if the action is allowed to run:
@@ -86,6 +145,37 @@ If you encounter an error with exit code 127 when running this action, it may be
 2. Navigate to the "Actions" tab.
 3. Under "General" settings, look for "Workflow permissions".
 4. Make sure that the Read and write permissions option is selected, which allows workflows to have read and write permissions in the repository for all scopes.
+
+### Required Permissions
+
+The action requires the following GitHub token permissions:
+
+```yaml
+permissions:
+  contents: write        # Required to delete branches
+  pull-requests: read    # Required to fetch closed/merged PRs
+```
+
+Add these permissions to your workflow:
+
+```yaml
+jobs:
+  cleanup-branches:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      # ... rest of your workflow
+```
+
+### Common Issues
+
+**"Reference does not exist" errors**: This is normal when re-running the action multiple times. The action now handles these gracefully and logs them as informational messages rather than errors.
+
+**"Cannot index string with string 'head'" error**: This indicates a permissions issue. Make sure you've added `pull-requests: read` permission to your workflow (see above).
 
 ## Usage the latest version
 
