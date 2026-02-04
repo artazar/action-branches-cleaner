@@ -30,6 +30,7 @@ runs:
   steps:
     - name: 'Restore last run cache'
       id: cache-restore
+      if: inputs.dry_run != 'true'
       uses: actions/cache/restore@v4
       with:
         path: .branch-cleaner-state
@@ -45,7 +46,7 @@ runs:
         ${GITHUB_ACTION_PATH}/entrypoint.sh "${{ inputs.base_branches }}" "${{ inputs.days_old_threshold }}" "${{ inputs.delete_unmerged_prs }}" "${{ inputs.dry_run }}" "${{ inputs.token }}"
 
     - name: 'Save last run cache'
-      if: always()
+      if: inputs.dry_run != 'true'
       uses: actions/cache/save@v4
       with:
         path: .branch-cleaner-state
