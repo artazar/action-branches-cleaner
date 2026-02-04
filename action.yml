@@ -16,7 +16,7 @@ inputs:
   delete_unmerged_prs:
     description: 'Delete branches from closed but unmerged PRs (rejected/abandoned)'
     required: false
-    default: 'true'
+    default: 'false'
   token:
     description: 'GitHub token for authentication'
     required: true
