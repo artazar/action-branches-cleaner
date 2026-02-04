@@ -13,6 +13,10 @@ inputs:
     description: 'Age threshold in days to delete inactive branches'
     required: true
     default: '7'
+  delete_unmerged_prs:
+    description: 'Delete branches from closed but unmerged PRs (rejected/abandoned)'
+    required: false
+    default: 'true'
   token:
     description: 'GitHub token for authentication'
     required: true
@@ -25,4 +29,4 @@ runs:
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
       run: |
-        ${GITHUB_ACTION_PATH}/entrypoint.sh "${{ inputs.base_branches }}" "${{ inputs.days_old_threshold }}" "${{ inputs.token }}"
+        ${GITHUB_ACTION_PATH}/entrypoint.sh "${{ inputs.base_branches }}" "${{ inputs.days_old_threshold }}" "${{ inputs.delete_unmerged_prs }}" "${{ inputs.token }}"
